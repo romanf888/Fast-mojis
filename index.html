@@ -1,0 +1,180 @@
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Copieur d'Émojis 🌙</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #f5f5f5;
+      color: #333;
+      margin: 0;
+      padding: 20px;
+      text-align: center;
+      transition: background 0.3s, color 0.3s;
+    }
+    body.dark {
+      background: #121212;
+      color: #f5f5f5;
+    }
+    h1 {
+      margin-bottom: 10px;
+    }
+    #search {
+      padding: 10px;
+      width: 80%;
+      max-width: 400px;
+      font-size: 16px;
+      margin-bottom: 20px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+    }
+    #emoji-container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+    }
+    .emoji {
+      font-size: 2rem;
+      cursor: pointer;
+      padding: 10px;
+      border-radius: 10px;
+      transition: background 0.2s;
+    }
+    .emoji:hover {
+      background: #e0e0e0;
+    }
+    body.dark .emoji:hover {
+      background: #333;
+    }
+    .copied {
+      background: #d1ffd1 !important;
+    }
+    .category-button {
+      margin: 5px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      background: #eee;
+      font-size: 14px;
+    }
+    .category-button.active {
+      background: #ccc;
+      font-weight: bold;
+    }
+    body.dark .category-button {
+      background: #333;
+      color: #f5f5f5;
+    }
+    body.dark .category-button.active {
+      background: #555;
+    }
+    #toggle-dark {
+      margin-top: 10px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <h1>😄 Copieur d'Émojis</h1>
+  <input type="text" id="search" placeholder="🔍 Rechercher un émoji..." />
+  <div id="categories"></div>
+  <div id="emoji-container"></div>
+  <button id="toggle-dark">🌓 Mode Sombre</button>
+
+  <script>
+    const container = document.getElementById('emoji-container');
+    const search = document.getElementById('search');
+    const categoriesDiv = document.getElementById('categories');
+    const toggleDark = document.getElementById('toggle-dark');
+    let allEmojis = [];
+    let allData = {};
+    let currentCategory = 'all';
+
+    fetch('data-by-emoji.json')
+      .then(response => response.json())
+      .then(data => {
+        allData = data;
+        allEmojis = Object.keys(data);
+        generateCategories();
+        displayEmojis();
+      });
+
+    function generateCategories() {
+      const categorySet = new Set();
+      allEmojis.forEach(emoji => {
+        const group = allData[emoji].group || "Divers";
+        categorySet.add(group);
+      });
+
+      categoriesDiv.innerHTML = '';
+      const allButton = document.createElement('button');
+      allButton.textContent = 'Tout';
+      allButton.className = 'category-button active';
+      allButton.addEventListener('click', () => {
+        currentCategory = 'all';
+        updateCategoryButtons();
+        displayEmojis(search.value.trim());
+      });
+      categoriesDiv.appendChild(allButton);
+
+      categorySet.forEach(category => {
+        const button = document.createElement('button');
+        button.textContent = category;
+        button.className = 'category-button';
+        button.addEventListener('click', () => {
+          currentCategory = category;
+          updateCategoryButtons();
+          displayEmojis(search.value.trim());
+        });
+        categoriesDiv.appendChild(button);
+      });
+    }
+
+    function updateCategoryButtons() {
+      const buttons = document.querySelectorAll('.category-button');
+      buttons.forEach(button => {
+        if (button.textContent === (currentCategory === 'all' ? 'Tout' : currentCategory)) {
+          button.classList.add('active');
+        } else {
+          button.classList.remove('active');
+        }
+      });
+    }
+
+    function displayEmojis(filter = '') {
+      container.innerHTML = '';
+      allEmojis.forEach(emoji => {
+        const group = allData[emoji].group || "Divers";
+        if (
+          (currentCategory === 'all' || group === currentCategory) &&
+          emoji.includes(filter)
+        ) {
+          const span = document.createElement('span');
+          span.textContent = emoji;
+          span.className = 'emoji';
+          span.addEventListener('click', () => {
+            navigator.clipboard.writeText(emoji);
+            span.classList.add('copied');
+            setTimeout(() => span.classList.remove('copied'), 500);
+          });
+          container.appendChild(span);
+        }
+      });
+    }
+
+    search.addEventListener('input', () => {
+      displayEmojis(search.value.trim());
+    });
+
+    toggleDark.addEventListener('click', () => {
+      document.body.classList.toggle('dark');
+    });
+  </script>
+</body>
+</html>
